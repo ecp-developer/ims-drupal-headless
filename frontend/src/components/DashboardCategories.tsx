@@ -89,70 +89,57 @@ const DashboardCategories: React.FC<DashboardCategoriesProps> = ({ onNavigate })
           </div>
 
           {recentCategories.length > 0 ? (
-            <div className="table-container">
+            <div className="table-container drupal-style">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Parent</th>
-                    <th>Weight</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th className="name-header">Name</th>
+                    <th className="status-header">Status</th>
+                    <th className="operations-header">Operations</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recentCategories.map((category) => (
-                    <tr key={category.id}>
-                      <td>
-                        <button 
-                          className="category-name-link" 
-                          onClick={() => onNavigate('category-view', category.id)}
-                        >
-                          {category.name}
-                        </button>
+                    <tr key={category.id} className="category-row">
+                      <td className="name-cell">
+                        <div className="category-name-wrapper">
+                          <button 
+                            className="category-name-link" 
+                            onClick={() => onNavigate('category-view', category.id)}
+                          >
+                            {category.name}
+                          </button>
+                          {category.parent_name && (
+                            <span className="parent-indicator">→ {category.parent_name}</span>
+                          )}
+                        </div>
                       </td>
-                      <td>
-                        {category.description ? (
-                          <span className="category-description-preview">
-                            {category.description.length > 50 
-                              ? `${category.description.substring(0, 50)}...` 
-                              : category.description
-                            }
-                          </span>
-                        ) : (
-                          <span className="text-muted">No description</span>
-                        )}
-                      </td>
-                      <td>
-                        {category.parent_name ? (
-                          <span className="parent-badge">{category.parent_name}</span>
-                        ) : (
-                          <span className="text-muted">Root</span>
-                        )}
-                      </td>
-                      <td>{category.weight || 0}</td>
-                      <td>
-                        <span className={`status-badge ${category.status ? 'active' : 'inactive'}`}>
-                          {category.status ? 'Active' : 'Inactive'}
+                      <td className="status-cell">
+                        <span className={`status-badge ${category.status ? 'published' : 'unpublished'}`}>
+                          {category.status ? 'Published' : 'Unpublished'}
                         </span>
                       </td>
-                      <td>
-                        <div className="action-buttons">
+                      <td className="operations-cell">
+                        <div className="operations-dropdown">
                           <button 
-                            className="btn-icon" 
+                            className="edit-btn"
                             onClick={() => onNavigate('category-view', category.id)}
-                            title="View"
                           >
-                            👁️
+                            Edit
                           </button>
                           <button 
-                            className="btn-icon" 
-                            onClick={() => onNavigate('category-edit', category.id)}
-                            title="Edit"
+                            className="dropdown-toggle"
+                            onClick={(e) => {
+                              const menu = e.currentTarget.nextElementSibling;
+                              menu?.classList.toggle('show');
+                            }}
                           >
-                            ✏️
+                            ▼
                           </button>
+                          <div className="dropdown-menu">
+                            <button onClick={() => onNavigate('category-view', category.id)}>View</button>
+                            <button onClick={() => onNavigate('category-edit', category.id)}>Edit</button>
+                          </div>
                         </div>
                       </td>
                     </tr>
