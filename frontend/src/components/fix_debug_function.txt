@@ -1,0 +1,8 @@
+  const handleDebugAuth = async () => {
+    console.log('🚀 Starting authentication debugging...');
+    const results = await AuthDebugger.runAllTests();
+    alert('Debug results logged to console');
+    if (results.postTest.success) {
+      loadVendors();
+    }
+  };

@@ -1,0 +1,639 @@
+import React, { useState, useEffect } from 'react';
+import vendorService from '../services/vendorService';
+import authService from '../services/authService';
+import AuthDebugger from '../services/authDebugger';
+import TaxonomySelect from './ui/TaxonomySelect';
+import type { DrupalNode, TaxonomyTerm } from '../types/drupal';
+import type { VendorFormData } from '../types/vendor';
+
+const VendorManagement: React.FC = () => {
+  const [vendors, setVendors] = useState<DrupalNode[]>([]);
+  const [includedTerms, setIncludedTerms] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingVendor, setEditingVendor] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [formData, setFormData] = useState<VendorFormData>({
+    vendorCode: '',
+    vendorName: '',
+    contactPerson: '',
+    email: '',
+    phone: '',
+    cityId: '',
+    countryId: '',
+    taxNumber: '',
+    address: ''
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [submitLoading, setSubmitLoading] = useState(false);
+
+  useEffect(() => {
+    initializeAuth();
+  }, []);
+
+  const initializeAuth = async () => {
+    try {
+      setAuthLoading(true);
+      await authService.getCsrfToken();
+      console.log('Authentication initialized successfully');
+    } catch (error) {
+      console.warn('Could not initialize authentication:', error);
+    } finally {
+      setAuthLoading(false);
+      loadVendors();
+    }
+  };
+
+  const loadVendors = async () => {
+    try {
+      setLoading(true);
+      const response = await vendorService.getVendors();
+      setVendors(response.data || []);
+      setIncludedTerms(response.included || []);
+    } catch (error) {
+      console.error('Error loading vendors:', error);
+      alert('Failed to load vendors. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      loadVendors();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await vendorService.searchVendors(searchQuery);
+      setVendors(response.data || []);
+      setIncludedTerms(response.included || []);
+    } catch (error) {
+      console.error('Error searching vendors:', error);
+      alert('Failed to search vendors. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleCountryChange = (countryId: string, countryTerm?: TaxonomyTerm) => {
+    console.log('🌍 Country changed:', { countryId, countryTerm });
+    console.log('🌍 Country term name:', countryTerm?.attributes?.name);
+    setFormData(prev => ({
+      ...prev,
+      countryId,
+      cityId: ''
+    }));
+  };
+
+  const handleCityChange = (cityId: string, cityTerm?: TaxonomyTerm) => {
+    console.log('🏙️ City changed:', { cityId, cityTerm });
+    console.log('🏙️ City term name:', cityTerm?.attributes?.name);
+    setFormData(prev => ({
+      ...prev,
+      cityId
+    }));
+  };
+import type { DrupalNode, TaxonomyTerm } from '../types/drupal';
+import type { VendorData, VendorFormData } from '../types/vendor';
+
+const VendorManagement: React.FC = () => {
+  const [vendors, setVendors] = useState<DrupalNode[]>([]);
+  const [includedTerms, setIncludedTerms] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingVendor, setEditingVendor] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [formData, setFormData] = useState<VendorFormData>({
+    vendorCode: '',
+    vendorName: '',
+    contactPerson: '',
+    email: '',
+    phone: '',
+    cityId: '',
+    countryId: '',
+    taxNumber: '',
+    address: ''
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [submitLoading, setSubmitLoading] = useState(false);
+
+  useEffect(() => {
+    initializeAuth();
+  }, []);
+
+  const initializeAuth = async () => {
+    try {
+      setAuthLoading(true);
+      // Try to get CSRF token to initialize authentication
+      await authService.getCsrfToken();
+      console.log('Authentication initialized successfully');
+    } catch (error) {
+      console.warn('Could not initialize authentication:', error);
+      // Continue anyway as some endpoints might work without auth
+    } finally {
+      setAuthLoading(false);
+      loadVendors();
+    }
+  };
+
+  const loadVendors = async () => {
+    try {
+      setLoading(true);
+      const response = await vendorService.getVendors();
+      setVendors(response.data || []);
+      setIncludedTerms(response.included || []);
+    } catch (error) {
+      console.error('Error loading vendors:', error);
+      alert('Failed to load vendors. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      loadVendors();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await vendorService.searchVendors(searchQuery);
+      setVendors(response.data || []);
+      setIncludedTerms(response.included || []);
+    } catch (error) {
+      console.error('Error searching vendors:', error);
+      alert('Failed to search vendors. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.vendorName.trim()) {
+      errors.vendorName = 'Vendor name is required';
+    }
+
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    if (formData.phone && !/^[+]?[\d\s\-\(\)]+$/.test(formData.phone)) {
+      errors.phone = 'Please enter a valid phone number';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const handleCountryChange = (countryId: string, countryTerm?: TaxonomyTerm) => {
+    setFormData(prev => ({
+      ...prev,
+      countryId,
+      cityId: ''
+    }));
+  };
+
+  const handleCityChange = (cityId: string, cityTerm?: TaxonomyTerm) => {
+    setFormData(prev => ({
+      ...prev,
+      cityId
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setSubmitLoading(true);
+
+      const vendorCode = formData.vendorCode || vendorService.generateVendorCode();
+      const vendorDataToSubmit = {
+        ...formData,
+        vendorCode
+      };
+
+      if (editingVendor) {
+        await vendorService.updateVendor(editingVendor, vendorDataToSubmit);
+        alert('Vendor updated successfully!');
+      } else {
+        // Use the full creation method with taxonomy relationships
+        console.log('Creating vendor with data:', vendorDataToSubmit);
+        console.log('Country ID from form:', vendorDataToSubmit.countryId);
+        console.log('City ID from form:', vendorDataToSubmit.cityId);
+        
+        // Try createVendorWithValidation first, fall back to simple if taxonomy fails
+        try {
+          const result = await vendorService.createVendorWithValidation(vendorDataToSubmit);
+          
+          // Verify the vendor was saved with relationships
+          const vendorId = result?.data?.id;
+          if (vendorId) {
+            console.log('🔍 Verifying vendor was saved correctly...');
+            const verification = await vendorService.verifyVendorRelationships(vendorId);
+            
+            if (verification) {
+              if (verification.hasCountry || verification.hasCity) {
+                alert(`Vendor created successfully!\n✅ Country: ${verification.hasCountry ? 'SAVED' : 'NOT SAVED'}\n✅ City: ${verification.hasCity ? 'SAVED' : 'NOT SAVED'}`);
+              } else {
+                alert('Vendor created but country/city relationships were not saved. Check console for details.');
+              }
+            }
+          } else {
+            alert('Vendor created successfully with country/city!');
+          }
+        } catch (error) {
+          console.warn('Failed with taxonomy validation, trying simple creation:', error);
+          await vendorService.createVendorSimple(vendorDataToSubmit);
+          alert('Vendor created successfully (without country/city due to taxonomy issues)!');
+        }
+      }
+
+      resetForm();
+      loadVendors();
+    } catch (error) {
+      console.error('Error saving vendor:', error);
+      alert(editingVendor ? 'Failed to update vendor. Please try again.' : 'Failed to create vendor. Please try again.');
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  const handleEdit = async (vendorId: string) => {
+    try {
+      const response = await vendorService.getVendorById(vendorId);
+      const vendor = response.data;
+      
+      const countryId = vendor.relationships?.field_country?.data?.id || '';
+      const cityId = vendor.relationships?.field_city?.data?.id || '';
+      
+      setFormData({
+        id: vendor.id,
+        vendorCode: vendor.attributes.field_vendor_code || '',
+        vendorName: vendor.attributes.title || '',
+        contactPerson: vendor.attributes.field_contact_person_name || '',
+        email: vendor.attributes.field_email || '',
+        phone: vendor.attributes.field_phone || '',
+        cityId: cityId,
+        countryId: countryId,
+        taxNumber: vendor.attributes.field_tax_number || '',
+        address: vendor.attributes.field_address || '',
+        status: vendor.attributes.status
+      });
+      
+      setEditingVendor(vendorId);
+      setShowForm(true);
+    } catch (error) {
+      console.error('Error loading vendor for edit:', error);
+      alert('Failed to load vendor details. Please try again.');
+    }
+  };
+
+  const handleDelete = async (vendorId: string, vendorName: string) => {
+    if (!confirm(`Are you sure you want to delete vendor "${vendorName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await vendorService.deleteVendor(vendorId);
+      alert('Vendor deleted successfully!');
+      loadVendors();
+    } catch (error) {
+      console.error('Error deleting vendor:', error);
+      alert('Failed to delete vendor. Please try again.');
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      vendorCode: '',
+      vendorName: '',
+      contactPerson: '',
+      email: '',
+      phone: '',
+      cityId: '',
+      countryId: '',
+      taxNumber: '',
+      address: ''
+    });
+    setFormErrors({});
+    setEditingVendor(null);
+    setShowForm(false);
+  };
+
+  const handleCancel = () => {
+    if (confirm('Are you sure you want to cancel? All unsaved changes will be lost.')) {
+      resetForm();
+    }
+  };
+
+  const getTermName = (termId: string): string => {
+    return vendorService.extractTermName(includedTerms, termId);
+  };
+
+  // Debug function to test authentication
+  const handleDebugAuth = async () => {
+    console.log('🚀 Starting authentication debugging...');
+    const results = await AuthDebugger.runAllTests();
+    
+    // Show results in an alert for quick debugging
+    const summary = `
+Authentication Debug Results:
+🌐 Connectivity: ${results.connectivityTest.success ? 'SUCCESS' : 'FAILED'}
+✅ CSRF Token: ${results.csrfTest.success ? 'SUCCESS' : 'FAILED'}
+✅ GET Request: ${results.getTest.success ? 'SUCCESS' : 'FAILED'}  
+✅ POST Request: ${results.postTest.success ? 'SUCCESS' : 'FAILED'}
+
+${!results.connectivityTest.success ? 'Basic connectivity failed - check if DDEV is running!' : ''}
+${!results.postTest.success ? 'Check console for detailed error information.' : ''}
+    `;
+    
+    alert(summary);
+    
+    if (results.postTest.success) {
+      // If POST test succeeded, refresh the vendor list
+      loadVendors();
+    }
+  };
+
+  if (showForm) {
+    return (
+      <div className="vendor-management">
+        <div className="vendor-form-container">
+          <div className="vendor-form-header">
+            <h2>{editingVendor ? 'Edit Vendor Information' : 'Add New Vendor'}</h2>
+            <p>Manage your vendor information and contacts.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="vendor-form">
+            <div className="form-grid">
+              <div className="form-group">
+                <label htmlFor="vendorCode">Vendor Code</label>
+                <input
+                  type="text"
+                  id="vendorCode"
+                  name="vendorCode"
+                  value={formData.vendorCode}
+                  onChange={handleInputChange}
+                  placeholder="Enter vendor code (auto-generated if empty)"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="vendorName">
+                  Vendor Name <span className="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="vendorName"
+                  name="vendorName"
+                  value={formData.vendorName}
+                  onChange={handleInputChange}
+                  placeholder="Enter vendor name"
+                  required
+                  className={formErrors.vendorName ? 'error' : ''}
+                />
+                {formErrors.vendorName && <span className="error-message">{formErrors.vendorName}</span>}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="contactPerson">Contact Person</label>
+                <input
+                  type="text"
+                  id="contactPerson"
+                  name="contactPerson"
+                  value={formData.contactPerson}
+                  onChange={handleInputChange}
+                  placeholder="Enter contact person"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="Enter email"
+                  className={formErrors.email ? 'error' : ''}
+                />
+                {formErrors.email && <span className="error-message">{formErrors.email}</span>}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="phone">Phone</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder="Enter phone number"
+                  className={formErrors.phone ? 'error' : ''}
+                />
+                {formErrors.phone && <span className="error-message">{formErrors.phone}</span>}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="country">Country</label>
+                <TaxonomySelect
+                  vocabulary="country"
+                  value={formData.countryId}
+                  onChange={handleCountryChange}
+                  placeholder="Select country"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="city">City</label>
+                <TaxonomySelect
+                  vocabulary="city"
+                  value={formData.cityId}
+                  onChange={handleCityChange}
+                  placeholder="Select city"
+                  filterBy={formData.countryId}
+                  disabled={!formData.countryId}
+                />
+                {!formData.countryId && (
+                  <small className="help-text">Please select a country first</small>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="taxNumber">Tax Number</label>
+                <input
+                  type="text"
+                  id="taxNumber"
+                  name="taxNumber"
+                  value={formData.taxNumber}
+                  onChange={handleInputChange}
+                  placeholder="Enter tax number"
+                />
+              </div>
+
+              <div className="form-group full-width">
+                <label htmlFor="address">Address</label>
+                <textarea
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  placeholder="Enter address"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="form-actions">
+              <button type="button" onClick={handleCancel} className="btn-cancel" disabled={submitLoading}>
+                Cancel
+              </button>
+              <button type="submit" className="btn-save" disabled={submitLoading}>
+                {submitLoading ? 'Saving...' : editingVendor ? 'Update Vendor' : 'Save Vendor'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="vendor-management">
+      <div className="vendor-header">
+        <div>
+          <h2>Vendor Management</h2>
+          <p>Manage your vendor information and contacts.</p>
+        </div>
+        <div className="header-actions">
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder="Search vendors..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            />
+            <button onClick={handleSearch} className="btn-search">🔍</button>
+          </div>
+          <div className="action-buttons">
+            <button onClick={() => setShowForm(true)} className="btn-add-vendor">
+              + Add Vendor
+            </button>
+            <button onClick={handleDebugAuth} className="btn-debug" style={{ marginLeft: '10px', backgroundColor: '#ff6b35' }}>
+              🔧 Debug Auth
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="vendor-table-container">
+        <table className="vendor-table">
+          <thead>
+            <tr>
+              <th>Vendor Code</th>
+              <th>Vendor Name</th>
+              <th>Contact Person</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Country</th>
+              <th>City</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(loading || authLoading) ? (
+              <tr>
+                <td colSpan={9} className="loading-cell">
+                  <div className="loading">
+                    <div className="spinner"></div>
+                    {authLoading ? 'Initializing authentication...' : 'Loading vendors...'}
+                  </div>
+                </td>
+              </tr>
+            ) : vendors.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="empty-cell">
+                  {searchQuery ? `No vendors found matching "${searchQuery}".` : 'No vendors found. Click "Add Vendor" to create one.'}
+                </td>
+              </tr>
+            ) : (
+              vendors.map((vendor) => (
+                <tr key={vendor.id}>
+                  <td>{vendor.attributes.field_vendor_code || 'N/A'}</td>
+                  <td>{vendor.attributes.title}</td>
+                  <td>{vendor.attributes.field_contact_person_name || 'N/A'}</td>
+                  <td>{vendor.attributes.field_email || 'N/A'}</td>
+                  <td>{vendor.attributes.field_phone || 'N/A'}</td>
+                  <td>{getTermName(vendor.relationships?.field_country?.data?.id)}</td>
+                  <td>{getTermName(vendor.relationships?.field_city?.data?.id)}</td>
+                  <td>
+                    <span className={`status ${vendor.attributes.status ? 'active' : 'inactive'}`}>
+                      {vendor.attributes.status ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="actions">
+                      <button 
+                        className="btn-action edit" 
+                        onClick={() => handleEdit(vendor.id)}
+                        title="Edit vendor"
+                      >
+                        ✏️
+                      </button>
+                      <button 
+                        className="btn-action delete" 
+                        onClick={() => handleDelete(vendor.id, vendor.attributes.title)}
+                        title="Delete vendor"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export default VendorManagement;
