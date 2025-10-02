@@ -15,7 +15,8 @@ const CategoryList: React.FC<CategoryListProps> = ({ onNavigate, initialFilter =
   const [statusFilter, setStatusFilter] = useState<string>(initialFilter);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const itemsPerPage = 10;
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  const itemsPerPage = 20; // Increased for better hierarchy view
 
   useEffect(() => {
     fetchCategories();
@@ -61,6 +62,43 @@ const CategoryList: React.FC<CategoryListProps> = ({ onNavigate, initialFilter =
     setFilteredCategories(filtered);
   };
 
+  // Build hierarchical structure
+  const buildHierarchy = (cats: Category[]) => {
+    const rootCategories = cats.filter(cat => !cat.parent_id);
+    const childrenMap = new Map<string, Category[]>();
+
+    // Group children by parent
+    cats.forEach(cat => {
+      if (cat.parent_id) {
+        if (!childrenMap.has(cat.parent_id)) {
+          childrenMap.set(cat.parent_id, []);
+        }
+        childrenMap.get(cat.parent_id)!.push(cat);
+      }
+    });
+
+    return { rootCategories, childrenMap };
+  };
+
+  const toggleExpand = (categoryId: string) => {
+    setExpandedCategories(prev =>
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
+  const expandAll = () => {
+    const allParents = filteredCategories
+      .filter(cat => !cat.parent_id)
+      .map(cat => cat.id);
+    setExpandedCategories(allParents);
+  };
+
+  const collapseAll = () => {
+    setExpandedCategories([]);
+  };
+
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
       const currentPageCategories = getPaginatedCategories().map(cat => cat.id);
@@ -95,12 +133,125 @@ const CategoryList: React.FC<CategoryListProps> = ({ onNavigate, initialFilter =
   };
 
   const getPaginatedCategories = () => {
+    const { rootCategories } = buildHierarchy(filteredCategories);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return filteredCategories.slice(startIndex, endIndex);
+    return rootCategories.slice(startIndex, endIndex);
   };
 
-  const totalPages = Math.ceil(filteredCategories.length / itemsPerPage);
+  const getTotalRootCategories = () => {
+    const { rootCategories } = buildHierarchy(filteredCategories);
+    return rootCategories.length;
+  };
+
+  const totalPages = Math.ceil(getTotalRootCategories() / itemsPerPage);
+
+  const renderCategoryRow = (category: Category, level: number = 0, childrenMap: Map<string, Category[]>) => {
+    const hasChildren = childrenMap.has(category.id) && childrenMap.get(category.id)!.length > 0;
+    const isExpanded = expandedCategories.includes(category.id);
+    const children = childrenMap.get(category.id) || [];
+
+    return (
+      <React.Fragment key={category.id}>
+        <tr className={`category-row level-${level}`}>
+          <td>
+            <input
+              type="checkbox"
+              checked={selectedCategories.includes(category.id)}
+              onChange={() => handleSelectCategory(category.id)}
+            />
+          </td>
+          <td>
+            <div className="category-name-cell" style={{ paddingLeft: `${level * 24}px` }}>
+              {hasChildren && (
+                <button 
+                  className="expand-btn" 
+                  onClick={() => toggleExpand(category.id)}
+                  title={isExpanded ? 'Collapse' : 'Expand'}
+                >
+                  {isExpanded ? '▼' : '▶'}
+                </button>
+              )}
+              <button 
+                className="category-name-link" 
+                onClick={() => onNavigate('category-view', category.id)}
+              >
+                {category.name}
+              </button>
+              {hasChildren && (
+                <span className="children-count">({children.length})</span>
+              )}
+            </div>
+          </td>
+          <td>
+            {category.description ? (
+              <span className="category-description">
+                {category.description.length > 60 
+                  ? `${category.description.substring(0, 60)}...` 
+                  : category.description
+                }
+              </span>
+            ) : (
+              <span className="text-muted">No description</span>
+            )}
+          </td>
+          <td>
+            {category.parent_name ? (
+              <span className="parent-badge">{category.parent_name}</span>
+            ) : (
+              <span className="root-badge">Root</span>
+            )}
+          </td>
+          <td>{category.weight || 0}</td>
+          <td>
+            <span className={`status-badge ${category.status ? 'active' : 'inactive'}`}>
+              {category.status ? 'Active' : 'Inactive'}
+            </span>
+          </td>
+          <td>
+            <div className="action-buttons">
+              <button 
+                className="btn-icon" 
+                onClick={() => onNavigate('category-view', category.id)}
+                title="View"
+              >
+                👁️
+              </button>
+              <button 
+                className="btn-icon" 
+                onClick={() => onNavigate('category-edit', category.id)}
+                title="Edit"
+              >
+                ✏️
+              </button>
+              <button 
+                className="btn-icon btn-delete" 
+                onClick={async () => {
+                  if (confirm(`Delete category "${category.name}"?`)) {
+                    try {
+                      await categoryService.deleteCategory(category.id);
+                      alert('Category deleted successfully!');
+                      fetchCategories();
+                    } catch (error) {
+                      alert('Failed to delete category');
+                    }
+                  }
+                }}
+                title="Delete"
+              >
+                🗑️
+              </button>
+            </div>
+          </td>
+        </tr>
+        
+        {/* Render children if expanded */}
+        {hasChildren && isExpanded && children.map(child => 
+          renderCategoryRow(child, level + 1, childrenMap)
+        )}
+      </React.Fragment>
+    );
+  };
 
   if (loading) {
     return (
@@ -129,6 +280,13 @@ const CategoryList: React.FC<CategoryListProps> = ({ onNavigate, initialFilter =
         </div>
 
         <div className="filter-section">
+          <button className="btn-expand" onClick={expandAll} title="Expand All">
+            ⊕ Expand All
+          </button>
+          <button className="btn-collapse" onClick={collapseAll} title="Collapse All">
+            ⊖ Collapse All
+          </button>
+          
           <select 
             className="filter-select"
             value={statusFilter}
@@ -149,24 +307,24 @@ const CategoryList: React.FC<CategoryListProps> = ({ onNavigate, initialFilter =
 
       {/* Results Info */}
       <div className="results-info">
-        Showing {getPaginatedCategories().length} of {filteredCategories.length} categories
+        Showing {getTotalRootCategories()} parent categories ({filteredCategories.length} total)
       </div>
 
       {/* Categories Table */}
       {filteredCategories.length > 0 ? (
         <>
           <div className="table-container">
-            <table className="data-table">
+            <table className="data-table category-tree">
               <thead>
                 <tr>
                   <th style={{ width: '40px' }}>
                     <input
                       type="checkbox"
                       onChange={handleSelectAll}
-                      checked={selectedCategories.length === getPaginatedCategories().length && getPaginatedCategories().length > 0}
+                      checked={selectedCategories.length === filteredCategories.length && filteredCategories.length > 0}
                     />
                   </th>
-                  <th>Name</th>
+                  <th>Category Name</th>
                   <th>Description</th>
                   <th>Parent</th>
                   <th>Weight</th>
@@ -175,85 +333,16 @@ const CategoryList: React.FC<CategoryListProps> = ({ onNavigate, initialFilter =
                 </tr>
               </thead>
               <tbody>
-                {getPaginatedCategories().map((category) => (
-                  <tr key={category.id}>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(category.id)}
-                        onChange={() => handleSelectCategory(category.id)}
-                      />
-                    </td>
-                    <td>
-                      <button 
-                        className="category-name-link" 
-                        onClick={() => onNavigate('category-view', category.id)}
-                      >
-                        {category.name}
-                      </button>
-                    </td>
-                    <td>
-                      {category.description ? (
-                        <span className="category-description">
-                          {category.description.length > 60 
-                            ? `${category.description.substring(0, 60)}...` 
-                            : category.description
-                          }
-                        </span>
-                      ) : (
-                        <span className="text-muted">No description</span>
-                      )}
-                    </td>
-                    <td>
-                      {category.parent_name ? (
-                        <span className="parent-badge">{category.parent_name}</span>
-                      ) : (
-                        <span className="text-muted">Root</span>
-                      )}
-                    </td>
-                    <td>{category.weight || 0}</td>
-                    <td>
-                      <span className={`status-badge ${category.status ? 'active' : 'inactive'}`}>
-                        {category.status ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="action-buttons">
-                        <button 
-                          className="btn-icon" 
-                          onClick={() => onNavigate('category-view', category.id)}
-                          title="View"
-                        >
-                          👁️
-                        </button>
-                        <button 
-                          className="btn-icon" 
-                          onClick={() => onNavigate('category-edit', category.id)}
-                          title="Edit"
-                        >
-                          ✏️
-                        </button>
-                        <button 
-                          className="btn-icon btn-delete" 
-                          onClick={async () => {
-                            if (confirm(`Delete category "${category.name}"?`)) {
-                              try {
-                                await categoryService.deleteCategory(category.id);
-                                alert('Category deleted successfully!');
-                                fetchCategories();
-                              } catch (error) {
-                                alert('Failed to delete category');
-                              }
-                            }
-                          }}
-                          title="Delete"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {(() => {
+                  const { rootCategories, childrenMap } = buildHierarchy(filteredCategories);
+                  const paginatedRoots = rootCategories.slice(
+                    (currentPage - 1) * itemsPerPage,
+                    currentPage * itemsPerPage
+                  );
+                  return paginatedRoots.map(category => 
+                    renderCategoryRow(category, 0, childrenMap)
+                  );
+                })()}
               </tbody>
             </table>
           </div>
