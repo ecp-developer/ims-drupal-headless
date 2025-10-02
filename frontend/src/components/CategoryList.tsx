@@ -29,7 +29,10 @@ const CategoryList: React.FC<CategoryListProps> = ({ onNavigate, initialFilter =
   const fetchCategories = async () => {
     try {
       setLoading(true);
+      console.log('Fetching categories...');
       const data = await categoryService.getCategories();
+      console.log('Categories received:', data);
+      console.log('Number of categories:', data.length);
       setCategories(data);
     } catch (error) {
       console.error('Error fetching categories:', error);
