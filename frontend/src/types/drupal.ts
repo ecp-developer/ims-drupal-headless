@@ -46,4 +46,4 @@ export interface TaxonomyResponse {
 
 export type ContentType = 'article' | 'page' | 'vendors';
 
-export type TaxonomyVocabulary = 'country' | 'city';
+export type TaxonomyVocabulary = 'country' | 'city' | 'categories';

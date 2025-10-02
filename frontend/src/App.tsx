@@ -4,16 +4,23 @@ import DashboardVendors from './components/DashboardVendors';
 import VendorList from './components/VendorList';
 import VendorForm from './components/VendorForm';
 import VendorView from './components/VendorView';
+import DashboardCategories from './components/DashboardCategories';
+import CategoryList from './components/CategoryList';
+import CategoryForm from './components/CategoryForm';
+import CategoryView from './components/CategoryView';
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard');
   const [selectedVendorId, setSelectedVendorId] = useState<string | undefined>();
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>();
   const [vendorFilter, setVendorFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   const handleNavigate = (view: string, vendorId?: string) => {
     setCurrentView(view);
     setSelectedVendorId(vendorId);
+    setSelectedCategoryId(vendorId); // Can reuse for categories too
     
     // Set filter based on view
     if (view === 'vendor-list-active') {
@@ -21,6 +28,11 @@ function App() {
       setCurrentView('vendor-list');
     } else if (view === 'vendor-list') {
       setVendorFilter('all');
+    } else if (view === 'category-list-active') {
+      setCategoryFilter('active');
+      setCurrentView('category-list');
+    } else if (view === 'category-list') {
+      setCategoryFilter('all');
     }
   };
 
@@ -40,6 +52,23 @@ function App() {
         return <VendorForm onNavigate={handleNavigate} mode="create" />;
       case 'vendor-edit':
         return <VendorForm onNavigate={handleNavigate} mode="edit" vendorId={selectedVendorId} />;
+      
+      // Category routes
+      case 'category-dashboard':
+        return <DashboardCategories onNavigate={handleNavigate} />;
+      case 'category-list':
+        return <CategoryList onNavigate={handleNavigate} initialFilter={categoryFilter} />;
+      case 'category-view':
+        return selectedCategoryId ? (
+          <CategoryView onNavigate={handleNavigate} categoryId={selectedCategoryId} />
+        ) : (
+          <div>No category selected</div>
+        );
+      case 'category-create':
+        return <CategoryForm onNavigate={handleNavigate} mode="create" />;
+      case 'category-edit':
+        return <CategoryForm onNavigate={handleNavigate} mode="edit" categoryId={selectedCategoryId} />;
+      
       case 'dashboard':
       default:
         return (
@@ -131,7 +160,7 @@ function App() {
             </div>
 
             {/* Vendor Management - Clickable */}
-            <div className="module-card orange" onClick={() => setCurrentView('vendors')} style={{ cursor: 'pointer' }}>
+            <div className="module-card orange" onClick={() => setCurrentView('vendor-dashboard')} style={{ cursor: 'pointer' }}>
               <div className="module-header">
                 <div className="module-info">
                   <h3>Vendor Management</h3>
@@ -141,6 +170,23 @@ function App() {
               </div>
               <div className="module-description">
                 Manage vendor information and contacts
+              </div>
+              <div className="module-arrow">
+                <span className="arrow-icon">→</span>
+              </div>
+            </div>
+
+            {/* Category Management - Clickable */}
+            <div className="module-card blue" onClick={() => setCurrentView('category-dashboard')} style={{ cursor: 'pointer' }}>
+              <div className="module-header">
+                <div className="module-info">
+                  <h3>Category Management</h3>
+                  <p>Organize Categories</p>
+                </div>
+                <div className="module-icon blue">📂</div>
+              </div>
+              <div className="module-description">
+                Manage IMS categories and hierarchies
               </div>
               <div className="module-arrow">
                 <span className="arrow-icon">→</span>
@@ -220,6 +266,13 @@ function App() {
           >
             <span className="nav-icon">🏢</span>
             Vendor Management
+          </button>
+          <button 
+            className={`nav-item ${currentView === 'category-dashboard' ? 'active' : ''}`}
+            onClick={() => setCurrentView('category-dashboard')}
+          >
+            <span className="nav-icon">📂</span>
+            Category Management
           </button>
         </nav>
       </aside>
