@@ -29,10 +29,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onNavigate, initialFilter =
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      console.log('Fetching categories...');
       const data = await categoryService.getCategories();
-      console.log('Categories received:', data);
-      console.log('Number of categories:', data.length);
       setCategories(data);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -67,12 +64,19 @@ const CategoryList: React.FC<CategoryListProps> = ({ onNavigate, initialFilter =
 
   // Build hierarchical structure
   const buildHierarchy = (cats: Category[]) => {
-    const rootCategories = cats.filter(cat => !cat.parent_id);
+    // Create a map of all category IDs
+    const categoryIds = new Set(cats.map(cat => cat.id));
+    
+    // Root categories are those without parent_id OR whose parent doesn't exist (orphaned)
+    const rootCategories = cats.filter(cat => 
+      !cat.parent_id || !categoryIds.has(cat.parent_id)
+    );
+    
     const childrenMap = new Map<string, Category[]>();
 
-    // Group children by parent
+    // Group children by parent (only if parent exists in the dataset)
     cats.forEach(cat => {
-      if (cat.parent_id) {
+      if (cat.parent_id && categoryIds.has(cat.parent_id)) {
         if (!childrenMap.has(cat.parent_id)) {
           childrenMap.set(cat.parent_id, []);
         }

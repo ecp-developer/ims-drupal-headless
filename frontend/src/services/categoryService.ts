@@ -76,32 +76,19 @@ class CategoryService {
   // Get all categories
   async getCategories(): Promise<Category[]> {
     try {
-      console.log('Calling Drupal API for categories...');
-      const url = `${DRUPAL_BASE_URL}/jsonapi/taxonomy_term/categories?include=parent&sort=weight,name`;
-      console.log('API URL:', url);
-      
-      const response = await axios.get(url);
-      
-      console.log('API Response:', response);
-      console.log('Response data:', response.data);
+      const response = await axios.get(
+        `${DRUPAL_BASE_URL}/jsonapi/taxonomy_term/categories?include=parent&sort=weight,name`
+      );
       
       if (!response.data?.data) {
-        console.log('No data in response');
         return [];
       }
 
-      const categories = response.data.data.map((item: any) => 
+      return response.data.data.map((item: any) => 
         this.transformCategory(item, response.data.included)
       );
-      
-      console.log('Transformed categories:', categories);
-      return categories;
     } catch (error) {
       console.error('Error fetching categories:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Response status:', error.response?.status);
-        console.error('Response data:', error.response?.data);
-      }
       throw error;
     }
   }
