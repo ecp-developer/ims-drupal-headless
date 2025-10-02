@@ -154,23 +154,24 @@ const CategoryList: React.FC<CategoryListProps> = ({ onNavigate, initialFilter =
     return (
       <React.Fragment key={category.id}>
         <tr className={`category-row level-${level}`}>
-          <td>
-            <input
-              type="checkbox"
-              checked={selectedCategories.includes(category.id)}
-              onChange={() => handleSelectCategory(category.id)}
-            />
-          </td>
-          <td>
-            <div className="category-name-cell" style={{ paddingLeft: `${level * 24}px` }}>
-              {hasChildren && (
+          <td className="name-cell">
+            <div className="category-name-wrapper" style={{ paddingLeft: `${level * 20}px` }}>
+              {hasChildren ? (
                 <button 
-                  className="expand-btn" 
+                  className="expand-toggle" 
                   onClick={() => toggleExpand(category.id)}
                   title={isExpanded ? 'Collapse' : 'Expand'}
                 >
-                  {isExpanded ? '▼' : '▶'}
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    {isExpanded ? (
+                      <path d="M3 5l5 5 5-5H3z"/> // Down arrow
+                    ) : (
+                      <path d="M5 3l5 5-5 5V3z"/> // Right arrow
+                    )}
+                  </svg>
                 </button>
+              ) : (
+                <span className="no-children-spacer"></span>
               )}
               <button 
                 className="category-name-link" 
@@ -178,69 +179,45 @@ const CategoryList: React.FC<CategoryListProps> = ({ onNavigate, initialFilter =
               >
                 {category.name}
               </button>
-              {hasChildren && (
-                <span className="children-count">({children.length})</span>
-              )}
             </div>
           </td>
-          <td>
-            {category.description ? (
-              <span className="category-description">
-                {category.description.length > 60 
-                  ? `${category.description.substring(0, 60)}...` 
-                  : category.description
-                }
-              </span>
-            ) : (
-              <span className="text-muted">No description</span>
-            )}
-          </td>
-          <td>
-            {category.parent_name ? (
-              <span className="parent-badge">{category.parent_name}</span>
-            ) : (
-              <span className="root-badge">Root</span>
-            )}
-          </td>
-          <td>{category.weight || 0}</td>
-          <td>
-            <span className={`status-badge ${category.status ? 'active' : 'inactive'}`}>
-              {category.status ? 'Active' : 'Inactive'}
+          <td className="status-cell">
+            <span className={`status-badge ${category.status ? 'published' : 'unpublished'}`}>
+              {category.status ? 'Published' : 'Unpublished'}
             </span>
           </td>
-          <td>
-            <div className="action-buttons">
+          <td className="operations-cell">
+            <div className="operations-dropdown">
+              <button className="edit-btn">Edit</button>
               <button 
-                className="btn-icon" 
-                onClick={() => onNavigate('category-view', category.id)}
-                title="View"
-              >
-                👁️
-              </button>
-              <button 
-                className="btn-icon" 
-                onClick={() => onNavigate('category-edit', category.id)}
-                title="Edit"
-              >
-                ✏️
-              </button>
-              <button 
-                className="btn-icon btn-delete" 
-                onClick={async () => {
-                  if (confirm(`Delete category "${category.name}"?`)) {
-                    try {
-                      await categoryService.deleteCategory(category.id);
-                      alert('Category deleted successfully!');
-                      fetchCategories();
-                    } catch (error) {
-                      alert('Failed to delete category');
-                    }
-                  }
+                className="dropdown-toggle"
+                onClick={(e) => {
+                  const dropdown = e.currentTarget.nextElementSibling;
+                  dropdown?.classList.toggle('show');
                 }}
-                title="Delete"
               >
-                🗑️
+                ▼
               </button>
+              <div className="dropdown-menu">
+                <button onClick={() => onNavigate('category-view', category.id)}>View</button>
+                <button onClick={() => onNavigate('category-edit', category.id)}>Edit</button>
+                <button 
+                  className="delete-option"
+                  onClick={async () => {
+                    if (confirm(`Delete category "${category.name}"?`)) {
+                      try {
+                        await categoryService.deleteCategory(category.id);
+                        alert('Category deleted successfully!');
+                        fetchCategories();
+                      } catch (error) {
+                        alert('Failed to delete category');
+                      }
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </td>
         </tr>
@@ -296,40 +273,24 @@ const CategoryList: React.FC<CategoryListProps> = ({ onNavigate, initialFilter =
             <option value="active">Active Only</option>
             <option value="inactive">Inactive Only</option>
           </select>
-
-          {selectedCategories.length > 0 && (
-            <button className="btn-delete-selected" onClick={handleDeleteSelected}>
-              🗑️ Delete Selected ({selectedCategories.length})
-            </button>
-          )}
         </div>
       </div>
 
       {/* Results Info */}
       <div className="results-info">
-        Showing {getTotalRootCategories()} parent categories ({filteredCategories.length} total)
+        Showing {getTotalRootCategories()} categories ({filteredCategories.length} total with children)
       </div>
 
       {/* Categories Table */}
       {filteredCategories.length > 0 ? (
         <>
-          <div className="table-container">
+          <div className="table-container drupal-style">
             <table className="data-table category-tree">
               <thead>
                 <tr>
-                  <th style={{ width: '40px' }}>
-                    <input
-                      type="checkbox"
-                      onChange={handleSelectAll}
-                      checked={selectedCategories.length === filteredCategories.length && filteredCategories.length > 0}
-                    />
-                  </th>
-                  <th>Category Name</th>
-                  <th>Description</th>
-                  <th>Parent</th>
-                  <th>Weight</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th className="name-header">Name</th>
+                  <th className="status-header">Status</th>
+                  <th className="operations-header">Operations</th>
                 </tr>
               </thead>
               <tbody>
