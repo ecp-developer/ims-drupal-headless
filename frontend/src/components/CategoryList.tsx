@@ -14,7 +14,6 @@ const CategoryList: React.FC<CategoryListProps> = ({ onNavigate, initialFilter =
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>(initialFilter);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
   const itemsPerPage = 20; // Increased for better hierarchy view
 
@@ -104,46 +103,6 @@ const CategoryList: React.FC<CategoryListProps> = ({ onNavigate, initialFilter =
 
   const collapseAll = () => {
     setExpandedCategories([]);
-  };
-
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      const currentPageCategories = getPaginatedCategories().map(cat => cat.id);
-      setSelectedCategories(currentPageCategories);
-    } else {
-      setSelectedCategories([]);
-    }
-  };
-
-  const handleSelectCategory = (id: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
-    );
-  };
-
-  const handleDeleteSelected = async () => {
-    if (selectedCategories.length === 0) return;
-    
-    if (!confirm(`Are you sure you want to delete ${selectedCategories.length} categories?`)) {
-      return;
-    }
-
-    try {
-      await Promise.all(selectedCategories.map(id => categoryService.deleteCategory(id)));
-      alert('Categories deleted successfully!');
-      setSelectedCategories([]);
-      fetchCategories();
-    } catch (error) {
-      console.error('Error deleting categories:', error);
-      alert('Failed to delete some categories');
-    }
-  };
-
-  const getPaginatedCategories = () => {
-    const { rootCategories } = buildHierarchy(filteredCategories);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return rootCategories.slice(startIndex, endIndex);
   };
 
   const getTotalRootCategories = () => {

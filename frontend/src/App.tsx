@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ContentList from './components/ContentList';
 import DashboardVendors from './components/DashboardVendors';
 import VendorList from './components/VendorList';
