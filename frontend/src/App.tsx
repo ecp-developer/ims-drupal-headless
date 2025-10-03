@@ -8,19 +8,26 @@ import DashboardCategories from './components/DashboardCategories';
 import CategoryList from './components/CategoryList';
 import CategoryForm from './components/CategoryForm';
 import CategoryView from './components/CategoryView';
+import DashboardItemMaster from './components/DashboardItemMaster';
+import ItemMasterList from './components/ItemMasterList';
+import ItemMasterForm from './components/ItemMasterForm';
+import ItemMasterView from './components/ItemMasterView';
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard');
   const [selectedVendorId, setSelectedVendorId] = useState<string | undefined>();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>();
+  const [selectedItemMasterId, setSelectedItemMasterId] = useState<string | undefined>();
   const [vendorFilter, setVendorFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [itemMasterFilter, setItemMasterFilter] = useState<string>('all');
 
   const handleNavigate = (view: string, vendorId?: string) => {
     setCurrentView(view);
     setSelectedVendorId(vendorId);
     setSelectedCategoryId(vendorId); // Can reuse for categories too
+    setSelectedItemMasterId(vendorId); // Can reuse for item masters too
     
     // Set filter based on view
     if (view === 'vendor-list-active') {
@@ -33,6 +40,11 @@ function App() {
       setCurrentView('category-list');
     } else if (view === 'category-list') {
       setCategoryFilter('all');
+    } else if (view === 'item-master-list-active') {
+      setItemMasterFilter('active');
+      setCurrentView('item-master-list');
+    } else if (view === 'item-master-list') {
+      setItemMasterFilter('all');
     }
   };
 
@@ -68,6 +80,22 @@ function App() {
         return <CategoryForm onNavigate={handleNavigate} mode="create" />;
       case 'category-edit':
         return <CategoryForm onNavigate={handleNavigate} mode="edit" categoryId={selectedCategoryId} />;
+      
+      // Item Master routes
+      case 'item-master-dashboard':
+        return <DashboardItemMaster onNavigate={handleNavigate} />;
+      case 'item-master-list':
+        return <ItemMasterList onNavigate={handleNavigate} initialFilter={itemMasterFilter} />;
+      case 'item-master-view':
+        return selectedItemMasterId ? (
+          <ItemMasterView onNavigate={handleNavigate} itemId={selectedItemMasterId} />
+        ) : (
+          <div>No item selected</div>
+        );
+      case 'item-master-create':
+        return <ItemMasterForm onNavigate={handleNavigate} mode="create" />;
+      case 'item-master-edit':
+        return <ItemMasterForm onNavigate={handleNavigate} mode="edit" itemId={selectedItemMasterId} />;
       
       case 'dashboard':
       default:
@@ -193,6 +221,23 @@ function App() {
               </div>
             </div>
 
+            {/* Item Master Management - Clickable */}
+            <div className="module-card teal" onClick={() => setCurrentView('item-master-dashboard')} style={{ cursor: 'pointer' }}>
+              <div className="module-header">
+                <div className="module-info">
+                  <h3>Item Master</h3>
+                  <p>Inventory Items</p>
+                </div>
+                <div className="module-icon teal">📦</div>
+              </div>
+              <div className="module-description">
+                Manage item masters and inventory catalog
+              </div>
+              <div className="module-arrow">
+                <span className="arrow-icon">→</span>
+              </div>
+            </div>
+
             {/* Drupal Content - Articles */}
             <div className="module-card teal">
               <div className="module-header">
@@ -273,6 +318,13 @@ function App() {
           >
             <span className="nav-icon">📂</span>
             Category Management
+          </button>
+          <button 
+            className={`nav-item ${currentView === 'item-master-dashboard' ? 'active' : ''}`}
+            onClick={() => setCurrentView('item-master-dashboard')}
+          >
+            <span className="nav-icon">📦</span>
+            Item Master
           </button>
         </nav>
       </aside>
