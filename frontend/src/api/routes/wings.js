@@ -11,9 +11,10 @@ router.get('/', async (req, res) => {
         const pool = await getConnection();
         console.log('✅ Got database connection');
         
-        const result = await pool.request().query('SELECT * FROM WingsInformation');
+        // Query the view to get unique Wings only
+        const result = await pool.request().query('SELECT * FROM vw_UniqueWings ORDER BY Name');
         
-        console.log(`✅ Query successful: ${result.recordset.length} wings found`);
+        console.log(`✅ Query successful: ${result.recordset.length} unique wings found`);
         
         res.json({
             success: true,

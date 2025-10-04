@@ -21,6 +21,8 @@
         "drupal/core-project-message": "^10.5",
         "drupal/core-recommended": "^10.5",
         "drupal/devel": "^5.4",
+        "drupal/feeds": "^3.0",
+        "drupal/feeds_ex": "^1.0@beta",
         "drush/drush": "^13.6"
     },
     "conflict": {

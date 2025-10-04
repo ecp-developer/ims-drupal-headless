@@ -1,0 +1,8 @@
+# DDEV Docker Compose override to allow web container to reach host services
+services:
+  web:
+    # Add host.docker.internal mapping for reaching host services
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Allow connection to WSL host network
+    network_mode: "bridge"

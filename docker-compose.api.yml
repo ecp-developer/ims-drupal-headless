@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  sql-api:
+    build:
+      context: ./frontend
+      dockerfile: src/api/Dockerfile
+    container_name: ims-sql-api
+    ports:
+      - "3001:3001"
+    environment:
+      - SQL_SERVER=host.docker.internal
+      - SQL_PORT=1433
+      - SQL_USER=drupal_user
+      - SQL_PASSWORD=2016Wfp61@
+      - SQL_DATABASE=ims-drupal-db
+      - API_PORT=3001
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    networks:
+      - ims-network
+
+networks:
+  ims-network:
+    driver: bridge

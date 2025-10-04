@@ -12,6 +12,7 @@ import DashboardItemMaster from './components/DashboardItemMaster';
 import ItemMasterList from './components/ItemMasterList';
 import ItemMasterForm from './components/ItemMasterForm';
 import ItemMasterView from './components/ItemMasterView';
+import SQLDataSync from './components/SQLDataSync';
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -96,6 +97,10 @@ function App() {
         return <ItemMasterForm onNavigate={handleNavigate} mode="create" />;
       case 'item-master-edit':
         return <ItemMasterForm onNavigate={handleNavigate} mode="edit" itemId={selectedItemMasterId} />;
+      
+      // SQL Data Sync
+      case 'sql-data-sync':
+        return <SQLDataSync />;
       
       case 'dashboard':
       default:
@@ -325,6 +330,16 @@ function App() {
           >
             <span className="nav-icon">📦</span>
             Item Master
+          </button>
+          
+          <div style={{ margin: '1rem 0', borderTop: '1px solid rgba(255,255,255,0.1)' }}></div>
+          
+          <button 
+            className={`nav-item ${currentView === 'sql-data-sync' ? 'active' : ''}`}
+            onClick={() => setCurrentView('sql-data-sync')}
+          >
+            <span className="nav-icon">🔄</span>
+            SQL Data Sync
           </button>
         </nav>
       </aside>

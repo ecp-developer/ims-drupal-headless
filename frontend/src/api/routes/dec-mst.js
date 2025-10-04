@@ -11,9 +11,10 @@ router.get('/', async (req, res) => {
         const pool = await getConnection();
         console.log('✅ Got database connection');
         
-        const result = await pool.request().query('SELECT * FROM DEC_MST');
+        // Query the view to get unique DECs only
+        const result = await pool.request().query('SELECT * FROM vw_UniqueDECs ORDER BY DECName');
         
-        console.log(`✅ Query successful: ${result.recordset.length} records found`);
+        console.log(`✅ Query successful: ${result.recordset.length} unique DECs found`);
         
         res.json({
             success: true,
